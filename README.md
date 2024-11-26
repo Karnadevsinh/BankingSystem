@@ -93,9 +93,9 @@ BankingSystem/
 
 ---
 ## 🛠️ **Testing Analysis**
-![img.png](/Users/karnadevsinhzala/Desktop/Screenshot 2024-11-26 at 9.10.15 PM.png)
-![img_1.png](/Users/karnadevsinhzala/Desktop/Screenshot 2024-11-26 at 9.10.52 PM.png)
-![img_2.png](/Users/karnadevsinhzala/Desktop/Screenshot 2024-11-26 at 9.11.15 PM.png)
+![UnitTestImg.png](UnitTestImg.png)
+![IntegrationTestImg.png](IntegrationTestImg.png)
+![Coverage.png](Coverage.png)
 ---
 
 ## 🌟 **Usage**
