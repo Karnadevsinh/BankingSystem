@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 class CurrencyConverterTest {
     private CurrencyConverter converter;
 
@@ -34,5 +36,89 @@ class CurrencyConverterTest {
         converter.updateExchangeRate("JPY", 110.0);
         double usdToJpy = converter.convert("USD", "JPY", 1);
         assertEquals(110.0, usdToJpy, 0.01);
+    }
+
+    @Test
+    void getExchangeRates_ReturnsNonEmptyMap() {
+        // Arrange
+        CurrencyConverter converter = new CurrencyConverter();
+
+        // Act
+        Map<String, Double> rates = converter.getExchangeRates();
+
+        // Assert
+        assertAll(
+                () -> assertFalse(rates.isEmpty(), "Exchange rates map should not be empty"),
+                () -> assertTrue(rates.size() >= 4, "Should contain at least 4 default currencies"),
+                () -> assertNotNull(rates.get("USD"), "Should contain USD rate"),
+                () -> assertNotNull(rates.get("EUR"), "Should contain EUR rate"),
+                () -> assertNotNull(rates.get("GBP"), "Should contain GBP rate"),
+                () -> assertNotNull(rates.get("INR"), "Should contain INR rate")
+        );
+    }
+
+    @Test
+    void getExchangeRates_ContainsCorrectDefaultValues() {
+        // Arrange
+        CurrencyConverter converter = new CurrencyConverter();
+
+        // Act
+        Map<String, Double> rates = converter.getExchangeRates();
+
+        // Assert
+        assertAll(
+                () -> assertEquals(1.0, rates.get("USD"), "USD rate should be 1.0"),
+                () -> assertEquals(0.9, rates.get("EUR"), "EUR rate should be 0.9"),
+                () -> assertEquals(0.78, rates.get("GBP"), "GBP rate should be 0.78"),
+                () -> assertEquals(83.0, rates.get("INR"), "INR rate should be 83.0")
+        );
+    }
+
+    @Test
+    void getExchangeRates_ReturnsDefensiveCopy() {
+        // Arrange
+        CurrencyConverter converter = new CurrencyConverter();
+        Map<String, Double> rates = converter.getExchangeRates();
+
+        // Act
+        rates.put("TEST", 1.0); // Modify the returned map
+        Map<String, Double> newRates = converter.getExchangeRates();
+
+        // Assert
+        assertFalse(newRates.containsKey("TEST"),
+                "Modifying returned map should not affect internal state");
+    }
+
+    @Test
+    void getExchangeRates_ReflectsUpdates() {
+        // Arrange
+        CurrencyConverter converter = new CurrencyConverter();
+        double newRate = 0.95;
+
+        // Act
+        converter.updateExchangeRate("EUR", newRate);
+        Map<String, Double> rates = converter.getExchangeRates();
+
+        // Assert
+        assertEquals(newRate, rates.get("EUR"),
+                "Exchange rates should reflect updates");
+    }
+
+    @Test
+    void getExchangeRates_UsedInConversion() {
+        // Arrange
+        CurrencyConverter converter = new CurrencyConverter();
+        double amount = 100.0;
+
+        // Act
+        Map<String, Double> rates = converter.getExchangeRates();
+        double expectedRate = rates.get("EUR") / rates.get("USD");
+        double convertedAmount = converter.convert("USD", "EUR", amount);
+
+        // Assert
+        assertEquals(amount * expectedRate, convertedAmount, 0.001,
+                "Conversion should use rates from getExchangeRates");
+        assertNotEquals(0.0, convertedAmount,
+                "Conversion result should not be zero");
     }
 }

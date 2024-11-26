@@ -25,11 +25,11 @@ public class ScheduledTransfer {
     public void executeDueTransfers() {
         LocalDate today = LocalDate.now();
         transfers.removeIf(transfer -> {
-            if (transfer.date.isEqual(today)) {
+            boolean isDueToday = transfer.date.isEqual(today);
+            if (isDueToday) {
                 System.out.println("Executed transfer: " + transfer);
-                return true;
             }
-            return false;
+            return isDueToday;
         });
     }
 

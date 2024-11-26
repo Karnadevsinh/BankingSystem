@@ -31,6 +31,12 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>5.11.3</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -62,6 +68,11 @@
                         <mutator>INCREMENTS</mutator>
                         <mutator>INVERT_NEGS</mutator>
                         <mutator>MATH</mutator>
+                        <mutator>EMPTY_RETURNS</mutator>
+                        <mutator>FALSE_RETURNS</mutator>
+                        <mutator>TRUE_RETURNS</mutator>
+                        <mutator>NULL_RETURNS</mutator>
+                        <mutator>PRIMITIVE_RETURNS</mutator>
                     </mutators>
                     <outputFormats>
                         <outputFormat>HTML</outputFormat>
