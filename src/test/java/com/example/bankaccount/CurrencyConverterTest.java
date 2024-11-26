@@ -121,4 +121,84 @@ class CurrencyConverterTest {
         assertNotEquals(0.0, convertedAmount,
                 "Conversion result should not be zero");
     }
+
+    @Test
+    public void testConvert_ValidCurrencies() {
+        CurrencyConverter converter = new CurrencyConverter();
+        double result = converter.convert("USD", "EUR", 100.0);
+        assertEquals(90.0, result, 0.01);
+    }
+
+    @Test
+    public void testConvert_FromCurrencyInvalid() {
+        CurrencyConverter converter = new CurrencyConverter();
+        try {
+            converter.convert("XXX", "EUR", 100.0);
+            fail("Should have thrown IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Unsupported currency", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testConvert_ToCurrencyInvalid() {
+        CurrencyConverter converter = new CurrencyConverter();
+        try {
+            converter.convert("USD", "XXX", 100.0);
+            fail("Should have thrown IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Unsupported currency", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testConvert_BothCurrenciesInvalid() {
+        CurrencyConverter converter = new CurrencyConverter();
+        try {
+            converter.convert("XXX", "YYY", 100.0);
+            fail("Should have thrown IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Unsupported currency", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testConvert_SameCurrency() {
+        CurrencyConverter converter = new CurrencyConverter();
+        double result = converter.convert("USD", "USD", 100.0);
+        assertEquals(100.0, result, 0.01);
+    }
+
+    @Test
+    public void testConvert_ZeroAmount() {
+        CurrencyConverter converter = new CurrencyConverter();
+        double result = converter.convert("USD", "EUR", 0.0);
+        assertEquals(0.0, result, 0.01);
+    }
+
+    @Test
+    public void testConvert_NegativeAmount() {
+        CurrencyConverter converter = new CurrencyConverter();
+        double result = converter.convert("USD", "EUR", -100.0);
+        assertEquals(-90.0, result, 0.01);
+    }
+
+    @Test
+    public void testConvert_AllCombinations() {
+        CurrencyConverter converter = new CurrencyConverter();
+        String[] currencies = {"USD", "EUR", "GBP", "INR"};
+
+        for (String fromCurrency : currencies) {
+            for (String toCurrency : currencies) {
+                double result = converter.convert(fromCurrency, toCurrency, 100.0);
+                assertNotNull(result);
+                assertTrue(result > 0);  // Since all rates are positive
+
+                // Test that conversion rate is properly applied
+                double expectedRate = converter.getExchangeRates().get(toCurrency) /
+                        converter.getExchangeRates().get(fromCurrency);
+                assertEquals(100.0 * expectedRate, result, 0.01);
+            }
+        }
+    }
 }

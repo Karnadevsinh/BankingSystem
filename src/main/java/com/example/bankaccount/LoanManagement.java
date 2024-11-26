@@ -34,7 +34,7 @@ public class LoanManagement {
 }
 
 class Loan {
-    private final String accountId;
+    final String accountId;
     private final double principal;
     private final double interestRate;
     private final int tenureMonths;
@@ -58,6 +58,7 @@ class Loan {
         }
         outstandingAmount -= amount;
     }
+
 
     public double getOutstandingAmount() {
         return outstandingAmount;

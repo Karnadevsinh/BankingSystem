@@ -14,6 +14,11 @@ public class BankAccountTest {
     private static final double OVERDRAFT_LIMIT = 500.0;
     private static final String PIN = "1234";
 
+    private static final String INITIAL_PIN = "1234";
+
+    private final String CORRECT_PIN = "1234";
+    private final String WRONG_PIN = "5678";
+
     @BeforeEach
     void setUp() {
         account = new BankAccount(ACCOUNT_ID, INITIAL_BALANCE, CURRENCY, OVERDRAFT_LIMIT, PIN);
@@ -293,6 +298,219 @@ public class BankAccountTest {
                         .anyMatch(transaction -> transaction.contains("Transferred: " + transferAmount)
                                 && transaction.contains(targetAccount.getAccountId())),
                 "Transaction history should contain transfer details");
+    }
+
+
+    @Test
+    void testDepositLogsTransaction() {
+        // Prepare
+        double depositAmount = 500.0;
+
+        // Act
+        boolean result = account.deposit(depositAmount, INITIAL_PIN);
+
+        // Assert
+        assertTrue(result, "Deposit should be successful");
+
+        // Verify transaction history
+        List<String> history = account.getTransactionHistory();
+        assertFalse(history.isEmpty(), "Transaction history should not be empty");
+        assertTrue(history.get(history.size() - 1).contains("Deposited: " + depositAmount),
+                "Transaction log should contain deposit details");
+    }
+
+    @Test
+    void testDepositFailsWithInvalidPin() {
+        // Prepare
+        double depositAmount = 500.0;
+
+        // Act
+        boolean result = account.deposit(depositAmount, "wrongpin");
+
+        // Assert
+        assertFalse(result, "Deposit should fail with invalid PIN");
+
+        // Verify transaction history
+        List<String> history = account.getTransactionHistory();
+        assertTrue(history.isEmpty(), "No transaction should be logged");
+    }
+
+    @Test
+    void testWithdrawLogsTransaction() {
+        // Prepare
+        double withdrawAmount = 300.0;
+
+        // Act
+        boolean result = account.withdraw(withdrawAmount, INITIAL_PIN);
+
+        // Assert
+        assertTrue(result, "Withdrawal should be successful");
+
+        // Verify transaction history
+        List<String> history = account.getTransactionHistory();
+        assertFalse(history.isEmpty(), "Transaction history should not be empty");
+        assertTrue(history.get(history.size() - 1).contains("Withdrew: " + withdrawAmount),
+                "Transaction log should contain withdrawal details");
+    }
+
+    @Test
+    void testWithdrawFailsWithInvalidPin() {
+        // Prepare
+        double withdrawAmount = 300.0;
+
+        // Act
+        boolean result = account.withdraw(withdrawAmount, "wrongpin");
+
+        // Assert
+        assertFalse(result, "Withdrawal should fail with invalid PIN");
+
+        // Verify transaction history
+        List<String> history = account.getTransactionHistory();
+        assertTrue(history.isEmpty(), "No transaction should be logged");
+    }
+
+    @Test
+    void testClearTransactionHistory() {
+        // Prepare - add some transactions
+        account.deposit(100.0, INITIAL_PIN);
+        account.withdraw(50.0, INITIAL_PIN);
+
+        // Verify transactions were logged
+        List<String> historyBefore = account.getTransactionHistory();
+        assertFalse(historyBefore.isEmpty(), "Transaction history should not be empty before clearing");
+
+        // Act
+        account.clearTransactionHistory();
+
+        // Assert
+        List<String> historyAfter = account.getTransactionHistory();
+        assertTrue(historyAfter.isEmpty(), "Transaction history should be empty after clearing");
+    }
+
+    @Test
+    void testChangePinSuccessful() {
+        // Prepare
+        String newPin = "5678";
+
+        // Act
+        account.changePin(INITIAL_PIN, newPin);
+
+        // Assert
+        assertTrue(account.authenticate(newPin), "New PIN should be set");
+        assertFalse(account.authenticate(INITIAL_PIN), "Old PIN should no longer work");
+    }
+
+    @Test
+    void testChangePinFailsWithWrongOldPin() {
+        // Prepare
+        String newPin = "5678";
+
+        // Act & Assert
+        assertThrows(SecurityException.class,
+                () -> account.changePin("wrongpin", newPin),
+                "Should throw SecurityException for incorrect old PIN");
+
+        // Verify PIN remains unchanged
+        assertTrue(account.authenticate(INITIAL_PIN), "Original PIN should remain");
+    }
+
+
+    @Test
+    public void testUnlockAccount_CorrectPin() {
+        // First lock the account
+        account.lockAccount();
+        assertTrue(account.isLocked());
+
+        // Try to unlock with correct PIN
+        account.unlockAccount(CORRECT_PIN);
+        assertFalse(account.isLocked());
+    }
+
+    @Test
+    public void testUnlockAccount_WrongPin() {
+        // First lock the account
+        account.lockAccount();
+        assertTrue(account.isLocked());
+
+        // Try to unlock with wrong PIN
+        try {
+            account.unlockAccount(WRONG_PIN);
+            fail("Should have thrown SecurityException");
+        } catch (SecurityException e) {
+            assertEquals("Incorrect PIN. Unable to unlock the account.", e.getMessage());
+            assertTrue(account.isLocked(), "Account should remain locked");
+        }
+    }
+
+    @Test
+    public void testUnlockAccount_NullPin() {
+        account.lockAccount();
+        assertTrue(account.isLocked());
+
+        try {
+            account.unlockAccount(null);
+            fail("Should have thrown SecurityException");
+        } catch (SecurityException e) {
+            assertEquals("Incorrect PIN. Unable to unlock the account.", e.getMessage());
+            assertTrue(account.isLocked(), "Account should remain locked");
+        }
+    }
+
+    @Test
+    public void testUnlockAccount_EmptyPin() {
+        account.lockAccount();
+        assertTrue(account.isLocked());
+
+        try {
+            account.unlockAccount("");
+            fail("Should have thrown SecurityException");
+        } catch (SecurityException e) {
+            assertEquals("Incorrect PIN. Unable to unlock the account.", e.getMessage());
+            assertTrue(account.isLocked(), "Account should remain locked");
+        }
+    }
+
+    @Test
+    public void testUnlockAccount_StateVerification() {
+        // Test initial state
+        assertFalse(account.isLocked(), "Account should be initially unlocked");
+
+        // Lock and verify
+        account.lockAccount();
+        assertTrue(account.isLocked(), "Account should be locked after lockAccount()");
+
+        // Unlock with wrong PIN and verify still locked
+        try {
+            account.unlockAccount(WRONG_PIN);
+            fail("Should have thrown SecurityException");
+        } catch (SecurityException e) {
+            assertTrue(account.isLocked(), "Account should still be locked after failed unlock attempt");
+        }
+
+        // Unlock with correct PIN and verify unlocked
+        account.unlockAccount(CORRECT_PIN);
+        assertFalse(account.isLocked(), "Account should be unlocked after successful unlock");
+    }
+
+    @Test
+    public void testUnlockAccount_MultipleAttempts() {
+        account.lockAccount();
+
+        // Try wrong PIN multiple times
+        for (int i = 0; i < 3; i++) {
+            try {
+                account.unlockAccount(WRONG_PIN);
+                fail("Should have thrown SecurityException");
+            } catch (SecurityException e) {
+                assertTrue(account.isLocked(),
+                        "Account should remain locked after failed attempt " + (i + 1));
+            }
+        }
+
+        // Verify correct PIN still works after multiple failed attempts
+        account.unlockAccount(CORRECT_PIN);
+        assertFalse(account.isLocked(),
+                "Account should unlock with correct PIN after failed attempts");
     }
 
 }

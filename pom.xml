@@ -15,6 +15,8 @@
         <junit.version>5.10.0</junit.version>
         <pitest.version>1.15.3</pitest.version>
         <pitest-junit5.version>1.2.1</pitest-junit5.version>
+        <maven-surefire.version>3.2.2</maven-surefire.version>
+        <maven-failsafe.version>3.2.2</maven-failsafe.version>
     </properties>
 
     <dependencies>
@@ -37,6 +39,12 @@
             <version>5.11.3</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.3.1</version> <!-- Use the latest version -->
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -45,7 +53,7 @@
             <plugin>
                 <groupId>org.pitest</groupId>
                 <artifactId>pitest-maven</artifactId>
-                <version>1.15.3</version>
+                <version>${pitest.version}</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.pitest</groupId>
@@ -57,49 +65,88 @@
                     <targetClasses>
                         <param>com.example.bankaccount.*</param>
                     </targetClasses>
-                    <targetTests>
-                        <param>com.example.bankaccount.*Test</param>
-                    </targetTests>
-<!--                    &lt;!&ndash; Added configurations for detailed mutation information &ndash;&gt;-->
-<!--                    <verbosity>VERBOSE</verbosity>-->
-<!--                    <timestampedReports>false</timestampedReports>-->
-                    <mutators>
-                        <mutator>CONDITIONALS_BOUNDARY</mutator>
-                        <mutator>INCREMENTS</mutator>
-                        <mutator>INVERT_NEGS</mutator>
-                        <mutator>MATH</mutator>
-                        <mutator>EMPTY_RETURNS</mutator>
-                        <mutator>FALSE_RETURNS</mutator>
-                        <mutator>TRUE_RETURNS</mutator>
-                        <mutator>NULL_RETURNS</mutator>
-                        <mutator>PRIMITIVE_RETURNS</mutator>
-                    </mutators>
                     <outputFormats>
                         <outputFormat>HTML</outputFormat>
                         <outputFormat>XML</outputFormat>
                     </outputFormats>
-                    <!-- Optional: Uncomment below to specify individual mutators -->
-                    <!--
-                    <mutators>
-                        <mutator>CONDITIONALS_BOUNDARY</mutator>
-                        <mutator>INCREMENTS</mutator>
-                        <mutator>INVERT_NEGS</mutator>
-                        <mutator>MATH</mutator>
-                        <mutator>NEGATE_CONDITIONALS</mutator>
-                        <mutator>VOID_METHOD_CALLS</mutator>
-                        <mutator>EMPTY_RETURNS</mutator>
-                        <mutator>FALSE_RETURNS</mutator>
-                        <mutator>TRUE_RETURNS</mutator>
-                        <mutator>NULL_RETURNS</mutator>
-                        <mutator>PRIMITIVE_RETURNS</mutator>
-                    </mutators>
-                    -->
+                </configuration>
+                <executions>
+                    <!-- Unit Test Mutation Configuration -->
+                    <execution>
+                        <id>unit-mutation-tests</id>
+                        <goals>
+                            <goal>mutationCoverage</goal>
+                        </goals>
+                        <configuration>
+                            <mutationThreshold>70</mutationThreshold>
+                            <mutators>
+                                <mutator>CONDITIONALS_BOUNDARY</mutator>
+                                <mutator>INCREMENTS</mutator>
+                                <mutator>INVERT_NEGS</mutator>
+                                <mutator>MATH</mutator>
+                                <mutator>EMPTY_RETURNS</mutator>
+                                <mutator>FALSE_RETURNS</mutator>
+                                <mutator>TRUE_RETURNS</mutator>
+                                <mutator>NULL_RETURNS</mutator>
+                                <mutator>PRIMITIVE_RETURNS</mutator>
+                            </mutators>
+                            <excludedTestClasses>
+                                <param>**/*IntegrationTest</param>
+                            </excludedTestClasses>
+                        </configuration>
+                    </execution>
+
+                    <!-- Integration Test Mutation Configuration -->
+                    <execution>
+                        <id>integration-mutation-tests</id>
+                        <goals>
+                            <goal>mutationCoverage</goal>
+                        </goals>
+                        <configuration>
+<!--                            <mutationThreshold>60</mutationThreshold>-->
+                            <mutators>
+                                <mutator>CONSTRUCTOR_CALLS</mutator>
+                                <mutator>VOID_METHOD_CALLS</mutator>
+                                <mutator>NON_VOID_METHOD_CALLS</mutator>
+                                <mutator>EXPERIMENTAL_ARGUMENT_PROPAGATION</mutator>
+                                <mutator>INLINE_CONSTS</mutator>
+                                <mutator>REMOVE_CONDITIONALS</mutator>
+                            </mutators>
+                            <includedTestClasses>
+                                <param>**/*IntegrationTest</param>
+                            </includedTestClasses>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Maven Surefire Plugin for Unit Tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Failsafe Plugin for Integration Tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <includes>
+                        <include>**/*IntegrationTest.java</include>
+                    </includes>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>mutation-coverage</id>
                         <goals>
-                            <goal>mutationCoverage</goal>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -113,13 +160,6 @@
                         <param>com.example.bankaccount.BankingSystem</param>
                     </excludedClasses>
                 </configuration>
-            </plugin>
-
-            <!-- Maven Surefire Plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.2</version>
             </plugin>
         </plugins>
     </build>

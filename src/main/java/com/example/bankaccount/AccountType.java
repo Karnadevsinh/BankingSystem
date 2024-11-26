@@ -1,28 +1,29 @@
 package com.example.bankaccount;
 
 public enum AccountType {
-    SAVINGS,
-    CURRENT;
-
-    public double getMinimumBalance() {
-        switch (this) {
-            case SAVINGS:
-                return 500.0;
-            case CURRENT:
-                return 0.0;
-            default:
-                throw new IllegalStateException("Unexpected value: " + this);
+    SAVINGS {
+        @Override
+        public double getMinimumBalance() {
+            return 500.0;
         }
-    }
 
-    public double getOverdraftLimit() {
-        switch (this) {
-            case CURRENT:
-                return 1000.0;
-            case SAVINGS:
-                return 0.0;
-            default:
-                throw new IllegalStateException("Unexpected value: " + this);
+        @Override
+        public double getOverdraftLimit() {
+            return 0.0;
         }
-    }
+    },
+    CURRENT {
+        @Override
+        public double getMinimumBalance() {
+            return 0.0;
+        }
+
+        @Override
+        public double getOverdraftLimit() {
+            return 1000.0;
+        }
+    };
+
+    public abstract double getMinimumBalance();
+    public abstract double getOverdraftLimit();
 }

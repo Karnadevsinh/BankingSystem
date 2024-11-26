@@ -4,8 +4,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+
 class LoanManagementTest {
     private LoanManagement loanManagement;
+    private static final String ACCOUNT_ID = "ACC123";
+    private static final double AMOUNT = 10000.0;
+    private static final double INTEREST_RATE = 0.1; // 10%
+    private static final int TENURE_MONTHS = 12;
+    private static final double PRINCIPAL = 10000.0;
+
 
     @BeforeEach
     void setUp() {
@@ -65,23 +72,6 @@ class LoanManagementTest {
                 "Principal returned should match the value provided in constructor");
     }
 
-//    @ParameterizedTest
-//    @ValueSource(doubles = {1000.0, 5000.0, 10000.0, 50000.0})
-//    void getPrincipal_ReturnsCorrectValueForDifferentAmounts(double principal) {
-//        // Arrange
-//        Loan loan = new Loan("ACC123", principal, 0.05, 12);
-//
-//        // Act
-//        double result = loan.getPrincipal();
-//
-//        // Assert
-//        assertAll(
-//                () -> assertEquals(principal, result, "Principal should match the input value"),
-//                () -> assertNotEquals(0.0, result, "Principal should not be 0.0"),
-//                () -> assertTrue(result > 0.0, "Principal should be positive")
-//        );
-//    }
-
     @Test
     void getPrincipal_RetainsSameValueAfterRepayment() {
         // Arrange
@@ -117,5 +107,187 @@ class LoanManagementTest {
                 "Outstanding amount should be calculated using the correct principal");
         assertTrue(outstandingAmount > loan.getPrincipal(),
                 "Outstanding amount should be greater than principal due to interest");
+    }
+
+    // Test for survived mutant: removed call to Map::containsKey
+    @Test
+    void testApplyForLoan_ExistingLoan_ThrowsException() {
+        // First loan application
+        loanManagement.applyForLoan(ACCOUNT_ID, AMOUNT, INTEREST_RATE, TENURE_MONTHS);
+
+        // Second loan application should throw exception
+        assertThrows(IllegalStateException.class, () ->
+                loanManagement.applyForLoan(ACCOUNT_ID, AMOUNT, INTEREST_RATE, TENURE_MONTHS)
+        );
+
+        // Verify the exception message
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                loanManagement.applyForLoan(ACCOUNT_ID, AMOUNT, INTEREST_RATE, TENURE_MONTHS)
+        );
+        assertEquals("Existing loan detected. Repay before applying for a new loan.",
+                exception.getMessage());
+    }
+
+    // Test for survived mutant: replaced equality check with false in repayLoan
+    @Test
+    void testRepayLoan_NoActiveLoan_ThrowsException() {
+        // Attempt to repay non-existent loan
+        assertThrows(IllegalArgumentException.class, () ->
+                loanManagement.repayLoan("NON_EXISTENT", 1000.0)
+        );
+
+        // Verify the exception message
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                loanManagement.repayLoan("NON_EXISTENT", 1000.0)
+        );
+        assertEquals("No active loan for this account", exception.getMessage());
+    }
+
+    // Test for survived mutant: Substituted 0.0 with 1.0 in loan.getOutstandingAmount() <= 0
+    @Test
+    void testRepayLoan_FullRepayment_RemovesLoan() {
+        // Setup
+        loanManagement.applyForLoan(ACCOUNT_ID, AMOUNT, INTEREST_RATE, TENURE_MONTHS);
+        Loan loan = loanManagement.getLoanDetails(ACCOUNT_ID);
+        double totalPayable = loan.getOutstandingAmount();
+
+        // Repay the full amount
+        loanManagement.repayLoan(ACCOUNT_ID, totalPayable);
+
+        // Verify loan is removed
+        assertNull(loanManagement.getLoanDetails(ACCOUNT_ID));
+
+        // Verify attempting to repay again throws exception
+        assertThrows(IllegalArgumentException.class, () ->
+                loanManagement.repayLoan(ACCOUNT_ID, 100.0)
+        );
+    }
+
+    // Test for survived mutant: Substituted 0.0 with 1.0 in amount <= 0 check
+    @Test
+    void testLoanRepay_NonPositiveAmount_ThrowsException() {
+        // Setup
+        loanManagement.applyForLoan(ACCOUNT_ID, AMOUNT, INTEREST_RATE, TENURE_MONTHS);
+        Loan loan = loanManagement.getLoanDetails(ACCOUNT_ID);
+
+        // Test zero amount
+        assertThrows(IllegalArgumentException.class, () ->
+                loan.repay(0.0)
+        );
+
+        // Test negative amount
+        assertThrows(IllegalArgumentException.class, () ->
+                loan.repay(-100.0)
+        );
+
+        // Verify the exception message
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                loan.repay(0.0)
+        );
+        assertEquals("Repayment amount must be positive", exception.getMessage());
+    }
+
+    // Additional test to verify partial repayment behavior
+    @Test
+    void testRepayLoan_PartialRepayment_UpdatesOutstandingAmount() {
+        // Setup
+        loanManagement.applyForLoan(ACCOUNT_ID, AMOUNT, INTEREST_RATE, TENURE_MONTHS);
+        Loan loan = loanManagement.getLoanDetails(ACCOUNT_ID);
+        double initialOutstanding = loan.getOutstandingAmount();
+        double partialPayment = 1000.0;
+
+        // Make partial repayment
+        loanManagement.repayLoan(ACCOUNT_ID, partialPayment);
+
+        // Verify outstanding amount is updated correctly
+        assertEquals(initialOutstanding - partialPayment,
+                loan.getOutstandingAmount(), 0.001);
+
+        // Verify loan still exists
+        assertNotNull(loanManagement.getLoanDetails(ACCOUNT_ID));
+    }
+
+    @Test
+    void repayLoan_exactlyZeroOutstanding_shouldRemoveLoan() {
+        // Setup
+        loanManagement.applyForLoan(ACCOUNT_ID, PRINCIPAL, INTEREST_RATE, TENURE_MONTHS);
+        Loan loan = loanManagement.getLoanDetails(ACCOUNT_ID);
+        double totalAmount = loan.getOutstandingAmount();
+
+        // Make payment that makes outstanding exactly 0
+        loanManagement.repayLoan(ACCOUNT_ID, totalAmount);
+
+        // Verify loan is removed
+        assertNull(loanManagement.getLoanDetails(ACCOUNT_ID),
+                "Loan should be removed when outstanding amount is exactly 0");
+    }
+
+    @Test
+    void repayLoan_slightlyNegativeOutstanding_shouldRemoveLoan() {
+        // Setup
+        loanManagement.applyForLoan(ACCOUNT_ID, PRINCIPAL, INTEREST_RATE, TENURE_MONTHS);
+        Loan loan = loanManagement.getLoanDetails(ACCOUNT_ID);
+        double totalAmount = loan.getOutstandingAmount();
+
+        // Make payment slightly larger than outstanding amount
+        loanManagement.repayLoan(ACCOUNT_ID, totalAmount + 0.01);
+
+        // Verify loan is removed
+        assertNull(loanManagement.getLoanDetails(ACCOUNT_ID),
+                "Loan should be removed when outstanding amount is negative");
+    }
+
+    @Test
+    void repay_exactlyZeroAmount_shouldThrowException() {
+        // Setup
+        loanManagement.applyForLoan(ACCOUNT_ID, PRINCIPAL, INTEREST_RATE, TENURE_MONTHS);
+        Loan loan = loanManagement.getLoanDetails(ACCOUNT_ID);
+
+        // Attempt to repay exactly 0
+        assertThrows(IllegalArgumentException.class,
+                () -> loan.repay(0.0),
+                "Should throw exception when repayment amount is exactly 0");
+    }
+
+    @Test
+    void repay_slightlyPositiveAmount_shouldSucceed() {
+        // Setup
+        loanManagement.applyForLoan(ACCOUNT_ID, PRINCIPAL, INTEREST_RATE, TENURE_MONTHS);
+        Loan loan = loanManagement.getLoanDetails(ACCOUNT_ID);
+        double initialOutstanding = loan.getOutstandingAmount();
+        double smallAmount = 0.01;
+
+        // Repay very small amount
+        loan.repay(smallAmount);
+
+        // Verify the payment was processed
+        assertEquals(initialOutstanding - smallAmount, loan.getOutstandingAmount(),
+                "Small positive payment should reduce outstanding amount");
+    }
+
+    @Test
+    public void testLoanShouldNotBeRemovedWhenOutstandingAmountIsSlightlyPositive() {
+        // Arrange
+        LoanManagement loanManagement = new LoanManagement();
+        String accountId = "TEST001";
+        double principal = 1000.0;
+        double interestRate = 0.10; // 10%
+        int tenureMonths = 12;
+
+        // Apply for loan
+        loanManagement.applyForLoan(accountId, principal, interestRate, 12);
+
+        // Get total payable amount and pay all except 0.5
+        Loan loan = loanManagement.getLoanDetails(accountId);
+        double totalPayable = loan.getOutstandingAmount();
+        double partialPayment = totalPayable - 0.5;  // Leave 0.5 outstanding
+
+        // Act
+        loanManagement.repayLoan(accountId, partialPayment);
+
+        // Assert
+        assertNotNull(loanManagement.getLoanDetails(accountId), "Loan should still exist when outstanding amount is positive");
+
+        assertEquals(0.5, loanManagement.getLoanDetails(accountId).getOutstandingAmount(), 0.0001);
     }
 }
