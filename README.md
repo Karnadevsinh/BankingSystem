@@ -88,13 +88,17 @@ BankingSystem/
 - **Language**: Java  
 - **Framework**: JUnit 5 for Testing 
 - **Testing**: Mutation Testing
+- **Tool**: PITest
 - **Build Tool**: Maven  
 - **Version Control**: Git
 
 ---
 ## 🛠️ **Testing Analysis**
+**Unit Tests**
 ![UnitTestImg.png](UnitTestImg.png)
+**Integration Tests**
 ![IntegrationTestImg.png](IntegrationTestImg.png)
+**Coverage Snapshot**
 ![Coverage.png](Coverage.png)
 ---
 
@@ -107,7 +111,7 @@ BankingSystem/
 
 ---
 
-## 👩‍💻 **Authors**
+## 🧑🏻‍💻 **Authors**
 
 - [Karnadevsinh Zala](https://github.com/Karnadevsinh)  
 - [Somesh Awasthi](https://github.com/somesh-awasthi)
