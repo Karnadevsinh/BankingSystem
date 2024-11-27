@@ -127,7 +127,7 @@ public class BankAccount {
         return overdraftLimit;
     }
 
-    public void setOverdraftLimit(double overdraftLimit) {
-        this.overdraftLimit = overdraftLimit;
-    }
+//    public void setOverdraftLimit(double overdraftLimit) {
+//        this.overdraftLimit = overdraftLimit;
+//    }
 }

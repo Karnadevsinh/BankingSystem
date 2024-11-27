@@ -31,7 +31,7 @@ public class BankingSystem {
         System.out.print("Enter source currency (e.g., USD): ");
         String fromCurrency = scanner.nextLine();
 
-        System.out.print("Enter target currency (e.g., EUR): ");
+        System.out.print("Enter target currency (e.g., INR): ");
         String toCurrency = scanner.nextLine();
 
         System.out.print("Enter amount to convert: ");

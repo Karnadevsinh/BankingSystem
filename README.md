@@ -93,6 +93,31 @@ BankingSystem/
 - **Version Control**: Git
 
 ---
+
+
+## 🛠️ **Mutators**
+
+**For Unit Tests**
+- CONDITIONALS_BOUNDARY
+- INCREMENTS
+- INVERT_NEGS
+- MATH
+- EMPTY_RETURNS
+- FALSE_RETURNS
+- TRUE_RETURN
+- NULL_RETURNS
+- PRIMITIVE_RETURNS
+
+**For Integration Tests**
+- CONSTRUCTOR_CALLS
+- VOID_METHOD_CALLS
+- NON_VOID_METHOD_CALLS
+- EXPERIMENTAL_ARGUMENT_PROPAGATION
+- INLINE_CONSTS
+- REMOVE_CONDITIONALS
+
+---
+
 ## 🛠️ **Testing Analysis**
 **Unit Tests**
 ![UnitTestImg.png](UnitTestImg.png)
